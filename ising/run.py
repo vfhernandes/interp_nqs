@@ -160,7 +160,7 @@ def fine_tune_with_single_baseline(single_baseline, baseline_dir, fine_tune_dir)
     with open(baseline_results_path, 'r') as file:
         baseline_results = json.load(file)
     fine_tune_results[f'{single_baseline:.3f}'] = baseline_results[f'{single_baseline:.3f}']
-    save_results(baseline_results, fine_tune_dir, single_baseline)
+    # save_results(baseline_results, fine_tune_dir, single_baseline)
 
     # Fine-tuning below baseline
     h_i = single_baseline - dh
