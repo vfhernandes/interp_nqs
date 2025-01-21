@@ -1,0 +1,11 @@
+{
+    "system_size": 8,
+    "optimizers": "adam",
+    "learning_rates": 0.003,
+    "alpha": 4,
+    "training_steps": 200,
+    "symmetric": false,
+    "dh": 0.1,
+    "h_low": 0.0,
+    "h_high": 3.0
+}
