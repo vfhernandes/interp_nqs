@@ -1,4 +1,6 @@
 ising/results/
+ising_vmc/results/
+ising_vmc/configs/
 ising/configs/
 delftblue/
 results/
