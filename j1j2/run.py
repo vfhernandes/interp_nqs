@@ -68,13 +68,13 @@ def ensure_dir(path):
 def save_results(results, results_dir, j_i):
     """Saves results and variational state to disk."""
     # Save results as JSON
-    results_path = os.path.join(results_dir, f'results_h{j_i:.3f}.json')
+    results_path = os.path.join(results_dir, f'results_j{j_i:.3f}.json')
     with open(results_path, 'w') as file:
         json.dump(results, file, indent=4)
 
 def save_vstate(vstate, results_dir, j_i):
     # Save vstate as binary
-    vstate_path = os.path.join(results_dir, f'vstate_h{j_i:.3f}.mpack')
+    vstate_path = os.path.join(results_dir, f'vstate_j{j_i:.3f}.mpack')
     with open(vstate_path, 'wb') as file:
         file.write(flax.serialization.to_bytes(vstate))
 
@@ -138,23 +138,7 @@ def train(j_i, vstate=None):
 
     # We shall use an exchange Sampler which preserves the global magnetization (as this is a conserved quantity in the model)
     sa = nk.sampler.MetropolisExchange(hilbert=hilbert, graph=g, d_max = 2)
-    # model = symmetricRBM(alpha=alpha) if symmetric else nk.models.RBM(alpha=alpha)
-    model = FFNN()
-
-    # Construct the variational state
-    vs = nk.vqs.FullSumState(hilbert, model)
-
-    # We choose a basic, albeit important, Optimizer: the Stochastic Gradient Descent
-    opt = nk.optimizer.Sgd(learning_rate=0.01)
-
-    # Stochastic Reconfiguration
-    sr = nk.optimizer.SR(diag_shift=0.01, holomorphic = True)
-
-    # We can then specify a Variational Monte Carlo object, using the Hamiltonian, sampler and optimizers chosen.
-    # Note that we also specify the method to learn the parameters of the wave-function: here we choose the efficient
-    # Stochastic reconfiguration (Sr), here in an iterative setup
-    gs = nk.VMC(hamiltonian=op, optimizer=opt, variational_state=vs, preconditioner=sr)
-
+    
     # We need to specify the local operators as a matrix acting on a local Hilbert space 
     sf = []
     sites = []
@@ -169,10 +153,15 @@ def train(j_i, vstate=None):
 
     # Model Selection
     # model = symmetricRBM(alpha=alpha) if symmetric else nk.models.RBM(alpha=alpha)
-    model = FFNN()
+    # Construct the variational state
     if vstate is None:
+        model = FFNN()
         vstate = nk.vqs.FullSumState(hilbert, model)
-
+    else:
+        model = vstate.model
+    opt = optimizers[optimizer](learning_rate = learning_rate)
+    sr = nk.optimizer.SR(diag_shift=0.01, holomorphic = True)
+    gs = nk.VMC(hamiltonian=op, optimizer=opt, variational_state=vstate, preconditioner=sr)
     # Optimization and Training
     log = nk.logging.RuntimeLog()
     gs.run(out=log, n_iter=training_steps, obs={'Structure Factor': structure_factor}, show_progress = False)
@@ -225,9 +214,9 @@ def train_baseline():
 
 def fine_tune_with_single_baseline(single_baseline, baseline_dir, fine_tune_dir):
     """Fine-tune from a single baseline."""
-    os.makedirs(os.path.join(fine_tune_dir, f'baseline_h{single_baseline:.3f}'), exist_ok=True)
-    fine_tune_dir = os.path.join(fine_tune_dir, f'baseline_h{single_baseline:.3f}')
-    vstate = load_vstate(os.path.join(baseline_dir, f'vstate_h{single_baseline:.3f}.mpack'), random_vstate())
+    os.makedirs(os.path.join(fine_tune_dir, f'baseline_j{single_baseline:.3f}'), exist_ok=True)
+    fine_tune_dir = os.path.join(fine_tune_dir, f'baseline_j{single_baseline:.3f}')
+    vstate = load_vstate(os.path.join(baseline_dir, f'vstate_j{single_baseline:.3f}.mpack'), random_vstate())
     fine_tune_results = {}  # To accumulate fine-tune results for each j_i
 
     # Save baseline results in fine-tune directory
@@ -258,7 +247,7 @@ def fine_tune_with_single_baseline(single_baseline, baseline_dir, fine_tune_dir)
         j_i -= dj
 
     # Reload baseline state for above training
-    vstate = load_vstate(os.path.join(baseline_dir, f'vstate_h{single_baseline:.3f}.mpack'), vstate)
+    vstate = load_vstate(os.path.join(baseline_dir, f'vstate_j{single_baseline:.3f}.mpack'), vstate)
 
     # Fine-tuning above baseline
     j_i = single_baseline + dj
@@ -289,7 +278,7 @@ def fine_tune_from_all_baselines(baseline_dir, fine_tune_dir):
     
     for j2j1_baseline in js:
         j2j1_baseline = j2j1_baseline.item()
-        fine_tune_dir_single = os.path.join(fine_tune_dir, f'baseline_h{j2j1_baseline:.3f}')
+        fine_tune_dir_single = os.path.join(fine_tune_dir, f'baseline_j{j2j1_baseline:.3f}')
         print(f"Starting fine-tuning for baseline j2/j1={j2j1_baseline:.3f}")
         fine_tune_results = fine_tune_with_single_baseline(j2j1_baseline, baseline_dir, fine_tune_dir_single)
         fine_tune_results_all[f'{j2j1_baseline:.3f}'] = fine_tune_results  # Store fine-tuning results for each baseline

@@ -1,11 +1,11 @@
 {
     "system_size": 8,
-    "optimizers": "adam",
-    "learning_rates": 0.003,
+    "optimizers": "sgd",
+    "learning_rates": 0.01,
     "alpha": 4,
     "training_steps": 200,
-    "symmetric": false,
-    "dh": 0.1,
-    "h_low": 0.0,
-    "h_high": 3.0
+    "symmetric": true,
+    "dj": 0.01,
+    "j2j1_low": 0.0,
+    "j2j1_high": 1.0
 }

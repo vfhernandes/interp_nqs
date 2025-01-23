@@ -1,7 +1,7 @@
 {
     "system_size": 8,
-    "optimizers": "adam",
-    "learning_rates": 0.001,
+    "optimizers": "sgd",
+    "learning_rates": 0.01,
     "alpha": 4,
     "training_steps": 200,
     "symmetric": true,
